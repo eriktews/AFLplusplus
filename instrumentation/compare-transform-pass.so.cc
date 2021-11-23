@@ -354,6 +354,33 @@ bool CompareTransform::transformCmps(Module &M, const bool processStrcmp,
 
           }
 
+  char *fn = NULL;
+  auto                 bbx = &F.getEntryBlock();
+  BasicBlock::iterator IP = bbx->getFirstInsertionPt();
+  IRBuilder<>          IRB(&(*IP));
+  DebugLoc             Loc = IP->getDebugLoc();
+
+  if (Loc) {
+
+    StringRef   instFilename;
+    DILocation *cDILoc = dyn_cast<DILocation>(Loc.getAsMDNode());
+
+    if (cDILoc) { instFilename = cDILoc->getFilename(); }
+
+    if (instFilename.str().empty() && cDILoc) {
+
+      /* If the original location is empty, try using the inlined location
+       */
+      DILocation *oDILoc = cDILoc->getInlinedAt();
+      if (oDILoc) { instFilename = oDILoc->getFilename(); }
+
+    }
+    if (!instFilename.str().empty())
+      fn = (char*)instFilename.str().c_str();
+  }
+
+          fprintf(stderr, "%s:%s:%s\n", fn ? fn : "unknown", F.getName().str().c_str(), FuncName.str().c_str());
+
           calls.push_back(callInst);
 
         }
